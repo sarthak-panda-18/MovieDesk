@@ -59,6 +59,10 @@
 
   <dialog id="movieModal" class="movie-modal" aria-labelledby="modalTitle"><button id="closeModal" class="modal-close" aria-label="Close details">&#215;</button><div id="modalBackdrop" class="modal-backdrop"></div><div class="modal-body"><p id="modalMeta" class="kicker"></p><h2 id="modalTitle"></h2><p id="modalTagline" class="modal-tagline"></p><p id="modalOverview" class="modal-overview"></p><div class="detail-grid"><div><span>Director</span><strong id="modalDirector"></strong></div><div><span>Lead cast</span><strong id="modalCast"></strong></div><div><span>Release date</span><strong id="modalReleaseDate"></strong></div><div><span>Rating</span><strong id="modalRating"></strong></div></div><div class="financials"><div class="financial-heading"><span>Movie financials</span><small id="exchangeRate"></small></div><div class="currency-grid"><div><p>USD / Original</p><span>Budget</span><strong id="modalBudgetUsd"></strong><span>Worldwide revenue</span><strong id="modalRevenueUsd"></strong></div><div class="inr-card"><p>INR / Estimate</p><span>Budget</span><strong id="modalBudgetInr"></strong><span>Worldwide revenue</span><strong id="modalRevenueInr"></strong></div></div></div><button id="watchlistButton" class="button button-primary">Bookmark to watchlist</button></div></dialog>
   <div id="toast" class="toast" role="status"></div>
-  <script src="config.js"></script><script src="config.local.js"></script><script src="app.js"></script>
+  <script src="config.js"></script>
+<script>
+  window.MOVIEDESK_CONFIG = window.MOVIEDESK_CONFIG || {};
+</script>
+<script src="app.js"></script>
 </body>
 </html>

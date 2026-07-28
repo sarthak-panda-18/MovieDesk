@@ -1,0 +1,49 @@
+# =========================
+# Dependencies
+# =========================
+node_modules/
+
+# =========================
+# Environment Files
+# =========================
+.env
+.env.*
+.env.local
+
+# Local configuration (contains API keys)
+config.local.js
+
+# =========================
+# Logs
+# =========================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# Build Output
+# =========================
+dist/
+build/
+
+# =========================
+# Archives
+# =========================
+*.zip
+
+# =========================
+# Operating System Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+
+# =========================
+# Temporary Files
+# =========================
+*.tmp
+*.temp

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#080b16" />
+  <title>MovieDesk | Find your next great watch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <header class="site-header" id="top">
+    <nav class="nav shell" aria-label="Primary navigation">
+      <a class="brand" href="#top" aria-label="MovieDesk home"><span class="brand-mark">M</span><span>MovieDesk</span></a>
+      <div class="nav-links"><a href="#discover">Discover</a><a href="#collections">Collections</a><a href="#watchlist">My List <span id="watchlistCount" class="nav-count" hidden>0</span></a></div>
+      <button id="surpriseButton" class="nav-action">Surprise me <span aria-hidden="true">&#8599;</span></button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="hero" class="hero">
+      <div id="heroBackdrop" class="hero-backdrop" aria-hidden="true"></div>
+      <div class="hero-scrim"></div>
+      <div class="shell hero-content" id="heroContent">
+        <p class="kicker"><span class="live-dot"></span> Trending now</p>
+        <p id="heroMeta" class="hero-meta">Discover something extraordinary</p>
+        <h1 id="heroTitle">Stories that stay<br><em>with you.</em></h1>
+        <p id="heroCopy" class="hero-copy">Search for a film to uncover the people, numbers, and craft behind every unforgettable story.</p>
+        <div class="hero-actions"><button id="heroDetails" class="button button-primary"><span aria-hidden="true">&#9654;</span> Explore film</button><a class="button button-quiet" href="#discover">Browse popular</a></div>
+        <div class="search-wrap">
+          <form id="searchForm" class="search" role="search"><label class="sr-only" for="searchInput">Search movies</label><span class="search-symbol" aria-hidden="true"></span><input id="searchInput" autocomplete="off" placeholder="Search a movie, actor, or director" aria-expanded="false" aria-controls="searchResults" /><button type="submit">Search</button></form>
+          <div id="searchResults" class="search-results" role="listbox" hidden></div>
+        </div>
+        <div class="quick-search"><span>Popular searches</span><button data-query="Interstellar">Interstellar</button><button data-query="Dune">Dune</button><button data-query="Parasite">Parasite</button></div>
+      </div>
+      <div class="hero-progress"><span id="heroProgress"></span></div>
+    </section>
+
+    <section id="discover" class="section shell">
+      <div class="section-heading"><div><p class="kicker">Curated for tonight</p><h2>Popular <em>right now.</em></h2></div><p>Fresh audience favorites from around the world. Tap any card for the full story.</p></div>
+      <div id="movieGrid" class="movie-grid" aria-live="polite"></div>
+      <div id="movieEmpty" class="empty-state" hidden><div class="empty-orbit">&#10022;</div><h3>No films found</h3><p>Try a different title, actor, or director.</p></div>
+    </section>
+
+    <section id="collections" class="section collections-section">
+      <div class="shell"><div class="section-heading"><div><p class="kicker">Explore in chapters</p><h2>Great <em>collections.</em></h2></div><p>Complete TMDB collection data, including every film in the set.</p></div></div>
+      <div id="collectionRail" class="collection-rail" aria-live="polite" aria-label="Movie collections"></div>
+    </section>
+
+    <section id="watchlist" class="section shell watchlist-section">
+      <div class="section-heading"><div><p class="kicker">Saved for later</p><h2>Your <em>watchlist.</em></h2></div><button id="clearWatchlist" class="text-button" hidden>Clear all</button></div>
+      <div id="watchlistItems" class="watchlist-grid" aria-live="polite"></div>
+      <div id="watchlistEmpty" class="watchlist-empty"><span class="empty-icon">+</span><h3>Your next favorite belongs here</h3><p>Bookmark a movie from any card or its detail view.</p><a href="#discover" class="button button-primary">Discover movies</a></div>
+    </section>
+  </main>
+
+  <dialog id="movieModal" class="movie-modal" aria-labelledby="modalTitle"><button id="closeModal" class="modal-close" aria-label="Close details">&#215;</button><div id="modalBackdrop" class="modal-backdrop"></div><div class="modal-body"><p id="modalMeta" class="kicker"></p><h2 id="modalTitle"></h2><p id="modalTagline" class="modal-tagline"></p><p id="modalOverview" class="modal-overview"></p><div class="detail-grid"><div><span>Director</span><strong id="modalDirector"></strong></div><div><span>Lead cast</span><strong id="modalCast"></strong></div><div><span>Release date</span><strong id="modalReleaseDate"></strong></div><div><span>Rating</span><strong id="modalRating"></strong></div></div><div class="financials"><div class="financial-heading"><span>Movie financials</span><small id="exchangeRate"></small></div><div class="currency-grid"><div><p>USD / Original</p><span>Budget</span><strong id="modalBudgetUsd"></strong><span>Worldwide revenue</span><strong id="modalRevenueUsd"></strong></div><div class="inr-card"><p>INR / Estimate</p><span>Budget</span><strong id="modalBudgetInr"></strong><span>Worldwide revenue</span><strong id="modalRevenueInr"></strong></div></div></div><button id="watchlistButton" class="button button-primary">Bookmark to watchlist</button></div></dialog>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="config.js"></script><script src="config.local.js"></script><script src="app.js"></script>
+</body>
+</html>

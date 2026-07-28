@@ -1,5 +1,5 @@
 const config = window.MOVIEDESK_CONFIG || {};
-const TMDB = 'https://moviedesk-api.onrender.com/api/tmdb';
+const TMDB = "https://moviedesk-api.onrender.com/api";
 const IMAGE = 'https://image.tmdb.org/t/p/';
 const INRRATE = Number(config.inrPerUsd) || 83.75;
 const hasTmdb = Boolean(config.tmdbApiKey || config.tmdbBearerToken);

@@ -1,0 +1,63 @@
+/* Coral-night theme and an unclipped, card-first search experience. */
+:root {
+  --bg: #100a18;
+  --surface: #1c132b;
+  --surface-2: #281a3a;
+  --line: rgba(255, 243, 249, 0.16);
+  --ink: #fff9fc;
+  --muted: #c5b6c6;
+  --lime: #ffad8a;
+  --pink: #ae8cff;
+}
+
+.ambient-one { background: #8e65d7; }
+.ambient-two { background: #ef7489; }
+.hero {
+  z-index: 4;
+  overflow: visible;
+}
+.hero-scrim {
+  background: linear-gradient(90deg, #100a18 3%, rgba(16, 10, 24, 0.8) 39%, rgba(16, 10, 24, 0.18) 74%), linear-gradient(0deg, #100a18 0%, transparent 42%);
+}
+.search:focus-within {
+  border-color: var(--lime);
+  box-shadow: 0 0 0 4px rgba(255, 173, 138, 0.16), 0 22px 40px rgba(26, 7, 24, 0.42);
+}
+.search-results {
+  z-index: 50;
+  max-height: min(540px, 64vh);
+  padding: 11px;
+  border-color: rgba(255, 173, 138, 0.5);
+  background: rgba(28, 19, 43, 0.98);
+  box-shadow: 0 28px 70px rgba(12, 5, 16, 0.58);
+}
+.search-result {
+  grid-template-columns: 66px minmax(0, 1fr) auto;
+  min-height: 96px;
+  gap: 14px;
+  padding: 9px;
+}
+.search-result img,
+.search-result .poster-fallback,
+.search-result .search-placeholder {
+  width: 66px;
+  height: 88px;
+  border-radius: 8px;
+}
+.search-result strong { font-size: 15px; }
+.search-result small { margin-top: 5px; font-size: 12px; }
+.search-result b { background: rgba(255, 173, 138, 0.18); color: #ffd3c0; }
+.section { position: relative; z-index: 1; }
+.button-primary,
+.search button,
+.toast { color: #2b1120; }
+.movie-card:hover { border-color: rgba(255, 173, 138, 0.62); box-shadow: 0 27px 50px rgba(18, 5, 25, 0.46), 0 0 32px rgba(255, 173, 138, 0.13); }
+.currency-grid .inr-card { border-color: rgba(255, 173, 138, 0.38); background: rgba(255, 173, 138, 0.09); }
+
+@media (max-width: 560px) {
+  .search-results { max-height: 46vh; }
+  .search-result { grid-template-columns: 54px minmax(0, 1fr) auto; min-height: 78px; }
+  .search-result img,
+  .search-result .poster-fallback,
+  .search-result .search-placeholder { width: 54px; height: 70px; }
+}

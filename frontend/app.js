@@ -61,8 +61,7 @@ let popularMovies = fallbackMovies,
   featuredIndex = 0,
   activeMovie = null,
   searchTimer,
-  heroTimer,
-  heroTick;
+  heroTimer;
 const $ = (selector) => document.querySelector(selector);
 const grid = $("#movieGrid"),
   modal = $("#movieModal"),
@@ -223,17 +222,10 @@ function updateHero(movie) {
 }
 function startHeroCycle() {
   clearInterval(heroTimer);
-  clearInterval(heroTick);
-  let elapsed = 0;
   heroTimer = setInterval(() => {
     featuredIndex = (featuredIndex + 1) % popularMovies.length;
-    elapsed = 0;
     updateHero(popularMovies[featuredIndex]);
   }, 6500);
-  heroTick = setInterval(() => {
-    elapsed = (elapsed + 100) % 6500;
-    $("#heroProgress").style.width = `${(elapsed / 6500) * 100}%`;
-  }, 100);
 }
 
 function getWatchlist() {

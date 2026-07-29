@@ -90,4 +90,4 @@ This project is intended for educational and personal portfolio purposes.
 Movie data is provided by **The Movie Database (TMDB)**. This product uses the TMDB API but is not endorsed or certified by TMDB.
 
 ## Live Demo
-https://movie-desk-snowy.vercel.app
+https://movie-desk-indol.vercel.app/

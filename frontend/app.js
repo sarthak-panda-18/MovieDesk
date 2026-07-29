@@ -1,61 +1,548 @@
 const config = window.MOVIEDESK_CONFIG || {};
 const TMDB = "https://moviedesk-api.onrender.com/api";
-const IMAGE = 'https://image.tmdb.org/t/p/';
+const IMAGE = "https://image.tmdb.org/t/p/";
 const INRRATE = Number(config.inrPerUsd) || 83.75;
-const hasTmdb = Boolean(config.tmdbApiKey || config.tmdbBearerToken);
+const hasTmdb = true;
 const requestCache = new Map();
-const genreMap = {28:'Action',12:'Adventure',16:'Animation',35:'Comedy',80:'Crime',99:'Documentary',18:'Drama',10751:'Family',14:'Fantasy',36:'History',27:'Horror',10402:'Music',9648:'Mystery',10749:'Romance',878:'Sci-Fi',53:'Thriller',10752:'War',37:'Western'};
+const genreMap = {
+  28: "Action",
+  12: "Adventure",
+  16: "Animation",
+  35: "Comedy",
+  80: "Crime",
+  99: "Documentary",
+  18: "Drama",
+  10751: "Family",
+  14: "Fantasy",
+  36: "History",
+  27: "Horror",
+  10402: "Music",
+  9648: "Mystery",
+  10749: "Romance",
+  878: "Sci-Fi",
+  53: "Thriller",
+  10752: "War",
+  37: "Western",
+};
 const fallbackMovies = [
-  {tmdbId:693134,title:'Dune: Part Two',year:'2024',releaseDate:'2024-02-27',poster:'https://image.tmdb.org/t/p/w780/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg',backdrop:'https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg',rating:8.1,popularity:328,genreIds:[878,12],overview:'Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family.',tagline:'Long live the fighters.'},
-  {tmdbId:872585,title:'Oppenheimer',year:'2023',releaseDate:'2023-07-19',poster:'https://image.tmdb.org/t/p/w780/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg',backdrop:'https://image.tmdb.org/t/p/original/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg',rating:8.1,popularity:60,genreIds:[18,36],overview:'The story of J. Robert Oppenheimer and his role in the development of the atomic bomb.',tagline:'The world forever changes.'}
+  {
+    tmdbId: 693134,
+    title: "Dune: Part Two",
+    year: "2024",
+    releaseDate: "2024-02-27",
+    poster: "https://image.tmdb.org/t/p/w780/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg",
+    backdrop:
+      "https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg",
+    rating: 8.1,
+    popularity: 328,
+    genreIds: [878, 12],
+    overview:
+      "Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family.",
+    tagline: "Long live the fighters.",
+  },
+  {
+    tmdbId: 872585,
+    title: "Oppenheimer",
+    year: "2023",
+    releaseDate: "2023-07-19",
+    poster: "https://image.tmdb.org/t/p/w780/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+    backdrop:
+      "https://image.tmdb.org/t/p/original/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
+    rating: 8.1,
+    popularity: 60,
+    genreIds: [18, 36],
+    overview:
+      "The story of J. Robert Oppenheimer and his role in the development of the atomic bomb.",
+    tagline: "The world forever changes.",
+  },
 ];
-let popularMovies = fallbackMovies, shownMovies = fallbackMovies, featuredIndex = 0, activeMovie = null, searchTimer, heroTimer, heroTick;
-const $ = selector => document.querySelector(selector);
-const grid = $('#movieGrid'), modal = $('#movieModal'), searchInput = $('#searchInput'), searchResults = $('#searchResults');
+let popularMovies = fallbackMovies,
+  shownMovies = fallbackMovies,
+  featuredIndex = 0,
+  activeMovie = null,
+  searchTimer,
+  heroTimer,
+  heroTick;
+const $ = (selector) => document.querySelector(selector);
+const grid = $("#movieGrid"),
+  modal = $("#movieModal"),
+  searchInput = $("#searchInput"),
+  searchResults = $("#searchResults");
 
-function image(path, size='w780') { return path ? (path.startsWith('http') ? path : `${IMAGE}${size}${path}`) : ''; }
-function clean(value='') { return String(value).replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char])); }
-function money(value,currency) { return value ? new Intl.NumberFormat(currency==='INR'?'en-IN':'en-US',{style:'currency',currency,notation:'compact',maximumFractionDigits:2}).format(value) : 'Not disclosed'; }
-function movieKey(movie) { return String(movie.tmdbId || `${movie.title}-${movie.year}`); }
-function titleForCollection(name='') { return name.replace(/\s+Collection$/i,''); }
-function genresFor(movie) { return (movie.genres || movie.genreIds || []).slice(0,2).map(item => typeof item==='string'?item:(genreMap[item] || 'Cinema')); }
-function normalize(data) { return {tmdbId:data.id || data.tmdbId,title:data.title || data.name || 'Untitled',year:(data.release_date || data.first_air_date || data.year || '').slice(0,4) || 'TBA',releaseDate:data.release_date || data.releaseDate || '',poster:image(data.poster_path || data.poster),backdrop:image(data.backdrop_path || data.backdrop,'original'),rating:Number(data.vote_average ?? data.rating ?? 0),popularity:Math.round(data.popularity ?? 0),genreIds:data.genre_ids || data.genreIds || [],genres:(data.genres || []).map(g=>typeof g==='string'?g:g.name),overview:data.overview || '',tagline:data.tagline || '',director:data.credits?.crew?.find(person=>person.job==='Director')?.name || data.director || 'Not listed',cast:data.credits?.cast?.slice(0,3).map(person=>person.name).join(', ') || data.cast || 'Not listed',budget:data.budget || null,revenue:data.revenue || null,collection:data.belongs_to_collection || data.collection || null}; }
-function headers() { return config.tmdbBearerToken ? {Authorization:`Bearer ${config.tmdbBearerToken}`} : {}; }
-async function tmdb(path,params={}) { if(!hasTmdb) throw new Error('TMDB is not configured'); const url = new URL(`${TMDB}${path}`); Object.entries(params).forEach(([key,value])=>url.searchParams.set(key,value)); if(!config.tmdbBearerToken) url.searchParams.set('api_key',config.tmdbApiKey); const key=url.toString(); if(requestCache.has(key)) return requestCache.get(key); const request=fetch(url,{headers:headers()}).then(response=>{if(!response.ok) throw new Error(`TMDB ${response.status}`);return response.json();}); requestCache.set(key,request); try{return await request;}catch(error){requestCache.delete(key);throw error;} }
-function toast(message) { const item=$('#toast'); item.textContent=message; item.classList.add('show'); clearTimeout(toast.timer); toast.timer=setTimeout(()=>item.classList.remove('show'),2800); }
+function image(path, size = "w780") {
+  return path
+    ? path.startsWith("http")
+      ? path
+      : `${IMAGE}${size}${path}`
+    : "";
+}
+function clean(value = "") {
+  return String(value).replace(
+    /[&<>'"]/g,
+    (char) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[
+        char
+      ],
+  );
+}
+function money(value, currency) {
+  return value
+    ? new Intl.NumberFormat(currency === "INR" ? "en-IN" : "en-US", {
+        style: "currency",
+        currency,
+        notation: "compact",
+        maximumFractionDigits: 2,
+      }).format(value)
+    : "Not disclosed";
+}
+function movieKey(movie) {
+  return String(movie.tmdbId || `${movie.title}-${movie.year}`);
+}
+function titleForCollection(name = "") {
+  return name.replace(/\s+Collection$/i, "");
+}
+function genresFor(movie) {
+  return (movie.genres || movie.genreIds || [])
+    .slice(0, 2)
+    .map((item) =>
+      typeof item === "string" ? item : genreMap[item] || "Cinema",
+    );
+}
+function normalize(data) {
+  return {
+    tmdbId: data.id || data.tmdbId,
+    title: data.title || data.name || "Untitled",
+    year:
+      (data.release_date || data.first_air_date || data.year || "").slice(
+        0,
+        4,
+      ) || "TBA",
+    releaseDate: data.release_date || data.releaseDate || "",
+    poster: image(data.poster_path || data.poster),
+    backdrop: image(data.backdrop_path || data.backdrop, "original"),
+    rating: Number(data.vote_average ?? data.rating ?? 0),
+    popularity: Math.round(data.popularity ?? 0),
+    genreIds: data.genre_ids || data.genreIds || [],
+    genres: (data.genres || []).map((g) =>
+      typeof g === "string" ? g : g.name,
+    ),
+    overview: data.overview || "",
+    tagline: data.tagline || "",
+    director:
+      data.credits?.crew?.find((person) => person.job === "Director")?.name ||
+      data.director ||
+      "Not listed",
+    cast:
+      data.credits?.cast
+        ?.slice(0, 3)
+        .map((person) => person.name)
+        .join(", ") ||
+      data.cast ||
+      "Not listed",
+    budget: data.budget || null,
+    revenue: data.revenue || null,
+    collection: data.belongs_to_collection || data.collection || null,
+  };
+}
+function headers() {
+  return {};
+}
+async function tmdb(path, params = {}) {
+  const url = new URL(`${TMDB}${path}`);
+  Object.entries(params).forEach(([key, value]) => {
+    url.searchParams.set(key, value);
+  });
+  const key = url.toString();
+  if (requestCache.has(key)) {
+    return requestCache.get(key);
+  }
+  const request = fetch(url)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`API ${response.status}`);
+      }
+      return response.json();
+    });
+  requestCache.set(key, request);
+  try {
+    return await request;
+  } catch (err) {
+    requestCache.delete(key);
+    throw err;
+  }
+}
+function toast(message) {
+  const item = $("#toast");
+  item.textContent = message;
+  item.classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => item.classList.remove("show"), 2800);
+}
 
-function posterMarkup(movie, className='') { return movie.poster ? `<img class="${className}" src="${movie.poster}" alt="" loading="lazy" decoding="async" />` : `<div class="${className} poster-fallback" aria-hidden="true"></div>`; }
-function saved(movie) { return getWatchlist().some(item=>movieKey(item)===movieKey(movie)); }
-function cardMarkup(movie,index) { const genres=genresFor(movie); return `<article class="movie-card" data-index="${index}"><button class="bookmark ${saved(movie)?'is-saved':''}" data-bookmark="${index}" aria-label="${saved(movie)?'Remove from':'Add to'} watchlist">${saved(movie)?'&#9733;':'&#9825;'}</button><div class="poster-wrap">${posterMarkup(movie)}<span class="rating-badge">${movie.rating?movie.rating.toFixed(1):'N/A'}</span></div><div class="card-info"><h3>${clean(movie.title)}</h3><div class="card-meta"><span>${clean(movie.year)}</span><span aria-hidden="true">/</span><span>${movie.popularity?`${movie.popularity} popular`:'New release'}</span></div><div class="genre-chips">${genres.map(genre=>`<span class="genre-chip">${clean(genre)}</span>`).join('')}</div></div></article>`; }
-function renderMovies(list) { shownMovies=list; grid.innerHTML=list.length?list.map(cardMarkup).join(''):''; $('#movieEmpty').hidden=Boolean(list.length); }
-function renderMovieSkeletons() { grid.innerHTML=Array.from({length:8},()=>'<div class="card-skeleton"></div>').join(''); }
+function posterMarkup(movie, className = "") {
+  return movie.poster
+    ? `<img class="${className}" src="${movie.poster}" alt="" loading="lazy" decoding="async" />`
+    : `<div class="${className} poster-fallback" aria-hidden="true"></div>`;
+}
+function saved(movie) {
+  return getWatchlist().some((item) => movieKey(item) === movieKey(movie));
+}
+function cardMarkup(movie, index) {
+  const genres = genresFor(movie);
+  return `<article class="movie-card" data-index="${index}"><button class="bookmark ${saved(movie) ? "is-saved" : ""}" data-bookmark="${index}" aria-label="${saved(movie) ? "Remove from" : "Add to"} watchlist">${saved(movie) ? "&#9733;" : "&#9825;"}</button><div class="poster-wrap">${posterMarkup(movie)}<span class="rating-badge">${movie.rating ? movie.rating.toFixed(1) : "N/A"}</span></div><div class="card-info"><h3>${clean(movie.title)}</h3><div class="card-meta"><span>${clean(movie.year)}</span><span aria-hidden="true">/</span><span>${movie.popularity ? `${movie.popularity} popular` : "New release"}</span></div><div class="genre-chips">${genres.map((genre) => `<span class="genre-chip">${clean(genre)}</span>`).join("")}</div></div></article>`;
+}
+function renderMovies(list) {
+  shownMovies = list;
+  grid.innerHTML = list.length ? list.map(cardMarkup).join("") : "";
+  $("#movieEmpty").hidden = Boolean(list.length);
+}
+function renderMovieSkeletons() {
+  grid.innerHTML = Array.from(
+    { length: 8 },
+    () => '<div class="card-skeleton"></div>',
+  ).join("");
+}
 
-function updateHero(movie) { if(!movie) return; const backdrop=$('#heroBackdrop'), hero=$('#heroContent'); hero.classList.remove('hero-swap'); void hero.offsetWidth; hero.classList.add('hero-swap'); backdrop.style.backgroundImage=movie.backdrop?`url("${movie.backdrop}")`:'radial-gradient(circle at 68% 30%, #5141aa, transparent 40%),linear-gradient(135deg,#151a35,#070914)'; $('#heroMeta').textContent=`${movie.year}  /  ${genresFor(movie).join('  /  ')}`; $('#heroTitle').innerHTML=`${clean(movie.title).replace(':',':<br>')}<br><em>${clean(movie.tagline || 'Made for the big screen.')}</em>`; $('#heroCopy').textContent=movie.overview || 'A story waiting for your next great watch.'; $('#heroDetails').dataset.movieId=movie.tmdbId; }
-function startHeroCycle() { clearInterval(heroTimer); clearInterval(heroTick); let elapsed=0; heroTimer=setInterval(()=>{featuredIndex=(featuredIndex+1)%popularMovies.length;elapsed=0;updateHero(popularMovies[featuredIndex]);},6500); heroTick=setInterval(()=>{elapsed=(elapsed+100)%6500;$('#heroProgress').style.width=`${(elapsed/6500)*100}%`;},100); }
+function updateHero(movie) {
+  if (!movie) return;
+  const backdrop = $("#heroBackdrop"),
+    hero = $("#heroContent");
+  hero.classList.remove("hero-swap");
+  void hero.offsetWidth;
+  hero.classList.add("hero-swap");
+  backdrop.style.backgroundImage = movie.backdrop
+    ? `url("${movie.backdrop}")`
+    : "radial-gradient(circle at 68% 30%, #5141aa, transparent 40%),linear-gradient(135deg,#151a35,#070914)";
+  $("#heroMeta").textContent =
+    `${movie.year}  /  ${genresFor(movie).join("  /  ")}`;
+  $("#heroTitle").innerHTML =
+    `${clean(movie.title).replace(":", ":<br>")}<br><em>${clean(movie.tagline || "Made for the big screen.")}</em>`;
+  $("#heroCopy").textContent =
+    movie.overview || "A story waiting for your next great watch.";
+  $("#heroDetails").dataset.movieId = movie.tmdbId;
+}
+function startHeroCycle() {
+  clearInterval(heroTimer);
+  clearInterval(heroTick);
+  let elapsed = 0;
+  heroTimer = setInterval(() => {
+    featuredIndex = (featuredIndex + 1) % popularMovies.length;
+    elapsed = 0;
+    updateHero(popularMovies[featuredIndex]);
+  }, 6500);
+  heroTick = setInterval(() => {
+    elapsed = (elapsed + 100) % 6500;
+    $("#heroProgress").style.width = `${(elapsed / 6500) * 100}%`;
+  }, 100);
+}
 
-function getWatchlist(){try{return JSON.parse(localStorage.getItem('moviedesk-watchlist-v2'))||JSON.parse(localStorage.getItem('moviesdesk-watchlist-v1'))||[]}catch{return[]}}
-function setWatchlist(list){localStorage.setItem('moviedesk-watchlist-v2',JSON.stringify(list))}
-function renderWatchlist(){const list=getWatchlist(),host=$('#watchlistItems'),empty=$('#watchlistEmpty');empty.hidden=list.length>0;host.innerHTML=list.map((movie,index)=>`<article class="watchlist-card">${posterMarkup(movie)}<div><strong>${clean(movie.title)}</strong><small>${clean(movie.year)} / ${genresFor(movie).join(', ')}</small></div><button class="remove-watchlist" data-remove="${index}" aria-label="Remove ${clean(movie.title)}">&#215;</button></article>`).join('');$('#clearWatchlist').hidden=!list.length;$('#watchlistCount').hidden=!list.length;$('#watchlistCount').textContent=list.length;}
-function toggleWatchlist(movie){const list=getWatchlist(),index=list.findIndex(item=>movieKey(item)===movieKey(movie));if(index>=0){list.splice(index,1);toast(`${movie.title} removed from your watchlist`)}else{list.unshift(movie);toast(`${movie.title} saved to your watchlist`)}setWatchlist(list);renderWatchlist();renderMovies(shownMovies);}
+function getWatchlist() {
+  try {
+    return (
+      JSON.parse(localStorage.getItem("moviedesk-watchlist-v2")) ||
+      JSON.parse(localStorage.getItem("moviesdesk-watchlist-v1")) ||
+      []
+    );
+  } catch {
+    return [];
+  }
+}
+function setWatchlist(list) {
+  localStorage.setItem("moviedesk-watchlist-v2", JSON.stringify(list));
+}
+function renderWatchlist() {
+  const list = getWatchlist(),
+    host = $("#watchlistItems"),
+    empty = $("#watchlistEmpty");
+  empty.hidden = list.length > 0;
+  host.innerHTML = list
+    .map(
+      (movie, index) =>
+        `<article class="watchlist-card">${posterMarkup(movie)}<div><strong>${clean(movie.title)}</strong><small>${clean(movie.year)} / ${genresFor(movie).join(", ")}</small></div><button class="remove-watchlist" data-remove="${index}" aria-label="Remove ${clean(movie.title)}">&#215;</button></article>`,
+    )
+    .join("");
+  $("#clearWatchlist").hidden = !list.length;
+  $("#watchlistCount").hidden = !list.length;
+  $("#watchlistCount").textContent = list.length;
+}
+function toggleWatchlist(movie) {
+  const list = getWatchlist(),
+    index = list.findIndex((item) => movieKey(item) === movieKey(movie));
+  if (index >= 0) {
+    list.splice(index, 1);
+    toast(`${movie.title} removed from your watchlist`);
+  } else {
+    list.unshift(movie);
+    toast(`${movie.title} saved to your watchlist`);
+  }
+  setWatchlist(list);
+  renderWatchlist();
+  renderMovies(shownMovies);
+}
 
-function showMovie(movie){activeMovie=movie;$('#modalBackdrop').style.backgroundImage=movie.backdrop?`url("${movie.backdrop}")`:'';$('#modalMeta').textContent=`${movie.year} / ${genresFor(movie).join(' / ')}`;$('#modalTitle').textContent=movie.title;$('#modalTagline').textContent=movie.tagline;$('#modalOverview').textContent=movie.overview||'No overview is available for this title yet.';$('#modalDirector').textContent=movie.director;$('#modalCast').textContent=movie.cast;$('#modalReleaseDate').textContent=movie.releaseDate?new Intl.DateTimeFormat('en',{dateStyle:'medium'}).format(new Date(movie.releaseDate)):'Not listed';$('#modalRating').textContent=movie.rating?`${movie.rating.toFixed(1)} / 10`:'Not rated';$('#modalBudgetUsd').textContent=money(movie.budget,'USD');$('#modalRevenueUsd').textContent=money(movie.revenue,'USD');$('#modalBudgetInr').textContent=money(movie.budget*INRRATE,'INR');$('#modalRevenueInr').textContent=money(movie.revenue*INRRATE,'INR');$('#exchangeRate').textContent=`1 USD = INR ${INRRATE.toFixed(2)} estimate`;$('#watchlistButton').textContent=saved(movie)?'Remove from watchlist':'Bookmark to watchlist';modal.showModal();}
-async function showDetails(movie){try{const data=await tmdb(`/movie/${movie.tmdbId}`,{append_to_response:'credits',language:'en-US'});showMovie(normalize(data));}catch{showMovie(movie);}}
+function showMovie(movie) {
+  activeMovie = movie;
+  $("#modalBackdrop").style.backgroundImage = movie.backdrop
+    ? `url("${movie.backdrop}")`
+    : "";
+  $("#modalMeta").textContent =
+    `${movie.year} / ${genresFor(movie).join(" / ")}`;
+  $("#modalTitle").textContent = movie.title;
+  $("#modalTagline").textContent = movie.tagline;
+  $("#modalOverview").textContent =
+    movie.overview || "No overview is available for this title yet.";
+  $("#modalDirector").textContent = movie.director;
+  $("#modalCast").textContent = movie.cast;
+  $("#modalReleaseDate").textContent = movie.releaseDate
+    ? new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(
+        new Date(movie.releaseDate),
+      )
+    : "Not listed";
+  $("#modalRating").textContent = movie.rating
+    ? `${movie.rating.toFixed(1)} / 10`
+    : "Not rated";
+  $("#modalBudgetUsd").textContent = money(movie.budget, "USD");
+  $("#modalRevenueUsd").textContent = money(movie.revenue, "USD");
+  $("#modalBudgetInr").textContent = money(movie.budget * INRRATE, "INR");
+  $("#modalRevenueInr").textContent = money(movie.revenue * INRRATE, "INR");
+  $("#exchangeRate").textContent = `1 USD = INR ${INRRATE.toFixed(2)} estimate`;
+  $("#watchlistButton").textContent = saved(movie)
+    ? "Remove from watchlist"
+    : "Bookmark to watchlist";
+  modal.showModal();
+}
+async function showDetails(movie) {
+  try {
+    const data = await tmdb(`/movie/${movie.tmdbId}`, {
+      append_to_response: "credits",
+      language: "en-US",
+    });
+    showMovie(normalize(data));
+  } catch {
+    showMovie(movie);
+  }
+}
 
-function clearSuggestions(){searchResults.hidden=true;searchResults.innerHTML='';searchInput.setAttribute('aria-expanded','false')}
-function suggestionMarkup(movie,index){return `<button class="search-result" data-suggestion="${index}" role="option">${posterMarkup(movie)}<span><strong>${clean(movie.title)}</strong><small>${clean(movie.year)} / ${genresFor(movie).join(', ')}</small></span><b>${movie.rating?movie.rating.toFixed(1):'New'}</b></button>`}
-function renderSuggestions(list,message=''){if(!list.length&&!message)return clearSuggestions();searchResults._movies=list;searchResults.innerHTML=message?`<p class="search-status">${message}</p>`:list.map(suggestionMarkup).join('');searchResults.hidden=false;searchInput.setAttribute('aria-expanded','true')}
-async function suggestions(query){if(query.length<2)return clearSuggestions();renderSuggestions([], '<span class="loading-dot"></span> Searching TMDB...');try{const data=await tmdb('/search/movie',{query,include_adult:'false',language:'en-US'});const list=data.results.slice(0,7).map(normalize);renderSuggestions(list,list.length?'':'No exact matches. Try another search.')}catch{const local=fallbackMovies.filter(movie=>movie.title.toLowerCase().includes(query.toLowerCase()));renderSuggestions(local,local.length?'':'Search is unavailable right now.')}}
-async function submitSearch(query){clearSuggestions();if(!query)return renderMovies(popularMovies);renderMovieSkeletons();try{const data=await tmdb('/search/movie',{query,include_adult:'false',language:'en-US'});renderMovies(data.results.map(normalize));}catch{renderMovies(fallbackMovies.filter(movie=>movie.title.toLowerCase().includes(query.toLowerCase())));}}
+function clearSuggestions() {
+  searchResults.hidden = true;
+  searchResults.innerHTML = "";
+  searchInput.setAttribute("aria-expanded", "false");
+}
+function suggestionMarkup(movie, index) {
+  return `<button class="search-result" data-suggestion="${index}" role="option">${posterMarkup(movie)}<span><strong>${clean(movie.title)}</strong><small>${clean(movie.year)} / ${genresFor(movie).join(", ")}</small></span><b>${movie.rating ? movie.rating.toFixed(1) : "New"}</b></button>`;
+}
+function renderSuggestions(list, message = "") {
+  if (!list.length && !message) return clearSuggestions();
+  searchResults._movies = list;
+  searchResults.innerHTML = message
+    ? `<p class="search-status">${message}</p>`
+    : list.map(suggestionMarkup).join("");
+  searchResults.hidden = false;
+  searchInput.setAttribute("aria-expanded", "true");
+}
+async function suggestions(query) {
+  if (query.length < 2) return clearSuggestions();
+  renderSuggestions([], '<span class="loading-dot"></span> Searching TMDB...');
+  try {
+    const data = await tmdb("/search/movie", {
+      query,
+      include_adult: "false",
+      language: "en-US",
+    });
+    const list = data.results.slice(0, 7).map(normalize);
+    renderSuggestions(
+      list,
+      list.length ? "" : "No exact matches. Try another search.",
+    );
+  } catch {
+    const local = fallbackMovies.filter((movie) =>
+      movie.title.toLowerCase().includes(query.toLowerCase()),
+    );
+    renderSuggestions(
+      local,
+      local.length ? "" : "Search is unavailable right now.",
+    );
+  }
+}
+async function submitSearch(query) {
+  clearSuggestions();
+  if (!query) return renderMovies(popularMovies);
+  renderMovieSkeletons();
+  try {
+    const data = await tmdb("/search/movie", {
+      query,
+      include_adult: "false",
+      language: "en-US",
+    });
+    renderMovies(data.results.map(normalize));
+  } catch {
+    renderMovies(
+      fallbackMovies.filter((movie) =>
+        movie.title.toLowerCase().includes(query.toLowerCase()),
+      ),
+    );
+  }
+}
 
-function collectionMarkup(collection){const art=collection.poster?`<img src="${collection.poster}" alt="" loading="lazy" decoding="async"/>`:'<div class="collection-placeholder"></div>';return `<article class="collection-card" data-collection="${collection.id}">${art}<div class="collection-info"><span>${collection.parts.length} films</span><h3>${clean(titleForCollection(collection.name))}</h3></div></article>`}
-function collectionSkeletons(){return Array.from({length:5},()=>'<div class="collection-skeleton"></div>').join('')}
-async function loadCollections(){const rail=$('#collectionRail');rail.innerHTML=collectionSkeletons();try{const source=await tmdb('/movie/popular',{language:'en-US',page:'1'});const curated=[10,86311,295,328,119,8091,131292];const ids=[...new Set([...source.results.map(movie=>movie.belongs_to_collection?.id).filter(Boolean),...curated])].slice(0,7);const complete=await Promise.all(ids.map(id=>tmdb(`/collection/${id}`,{language:'en-US'})));const collections=complete.map(data=>({id:data.id,name:data.name,poster:image(data.poster_path),parts:data.parts||[]})).filter(item=>item.parts.length);rail.innerHTML=collections.length?collections.map(collectionMarkup).join(''):'<p class="search-status">Collections are not available right now.</p>';}catch{rail.innerHTML='<p class="search-status">Collections could not be loaded.</p>';}}
-async function openCollection(id){try{const data=await tmdb(`/collection/${id}`,{language:'en-US'});renderMovies(data.parts.map(normalize));$('#discover').scrollIntoView({behavior:'smooth',block:'start'});toast(`${data.name} loaded`);}catch{toast('That collection could not be opened.')}}
+function collectionMarkup(collection) {
+  const art = collection.poster
+    ? `<img src="${collection.poster}" alt="" loading="lazy" decoding="async"/>`
+    : '<div class="collection-placeholder"></div>';
+  return `<article class="collection-card" data-collection="${collection.id}">${art}<div class="collection-info"><span>${collection.parts.length} films</span><h3>${clean(titleForCollection(collection.name))}</h3></div></article>`;
+}
+function collectionSkeletons() {
+  return Array.from(
+    { length: 5 },
+    () => '<div class="collection-skeleton"></div>',
+  ).join("");
+}
+async function loadCollections() {
+  const rail = $("#collectionRail");
+  rail.innerHTML = collectionSkeletons();
+  try {
+    const source = await tmdb("/movie/popular", {
+      language: "en-US",
+      page: "1",
+    });
+    const curated = [10, 86311, 295, 328, 119, 8091, 131292];
+    const ids = [
+      ...new Set([
+        ...source.results
+          .map((movie) => movie.belongs_to_collection?.id)
+          .filter(Boolean),
+        ...curated,
+      ]),
+    ].slice(0, 7);
+    const complete = await Promise.all(
+      ids.map((id) => tmdb(`/collection/${id}`, { language: "en-US" })),
+    );
+    const collections = complete
+      .map((data) => ({
+        id: data.id,
+        name: data.name,
+        poster: image(data.poster_path),
+        parts: data.parts || [],
+      }))
+      .filter((item) => item.parts.length);
+    rail.innerHTML = collections.length
+      ? collections.map(collectionMarkup).join("")
+      : '<p class="search-status">Collections are not available right now.</p>';
+  } catch {
+    rail.innerHTML =
+      '<p class="search-status">Collections could not be loaded.</p>';
+  }
+}
+async function openCollection(id) {
+  try {
+    const data = await tmdb(`/collection/${id}`, { language: "en-US" });
+    renderMovies(data.parts.map(normalize));
+    $("#discover").scrollIntoView({ behavior: "smooth", block: "start" });
+    toast(`${data.name} loaded`);
+  } catch {
+    toast("That collection could not be opened.");
+  }
+}
 
-async function initialise(){renderMovieSkeletons();try{const data=await tmdb('/movie/popular',{language:'en-US',region:'IN'});popularMovies=data.results.slice(0,12).map(normalize);renderMovies(popularMovies);updateHero(popularMovies[0]);startHeroCycle();}catch{renderMovies(fallbackMovies);updateHero(fallbackMovies[0]);startHeroCycle();toast('Showing selected titles while TMDB loads.')}renderWatchlist();const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){loadCollections();observer.disconnect()}},{rootMargin:'260px'});observer.observe($('#collections'));}
+async function initialise() {
+  renderMovieSkeletons();
+  try {
+    const data = await tmdb("/movie/popular", {
+      language: "en-US",
+      region: "IN",
+    });
+    popularMovies = data.results.slice(0, 12).map(normalize);
+    renderMovies(popularMovies);
+    updateHero(popularMovies[0]);
+    startHeroCycle();
+  } catch {
+    renderMovies(fallbackMovies);
+    updateHero(fallbackMovies[0]);
+    startHeroCycle();
+    toast("Showing selected titles while TMDB loads.");
+  }
+  renderWatchlist();
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        loadCollections();
+        observer.disconnect();
+      }
+    },
+    { rootMargin: "260px" },
+  );
+  observer.observe($("#collections"));
+}
 
-grid.addEventListener('click',event=>{const card=event.target.closest('[data-index]');if(!card)return;const movie=shownMovies[Number(card.dataset.index)];if(event.target.closest('[data-bookmark]')){toggleWatchlist(movie);return}showDetails(movie)});
-$('#searchForm').addEventListener('submit',event=>{event.preventDefault();submitSearch(searchInput.value.trim());$('#discover').scrollIntoView({behavior:'smooth'})});
-searchInput.addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>suggestions(searchInput.value.trim()),260)});searchInput.addEventListener('keydown',event=>{if(event.key==='Escape')clearSuggestions()});searchResults.addEventListener('click',event=>{const item=event.target.closest('[data-suggestion]');if(!item)return;const movie=searchResults._movies[Number(item.dataset.suggestion)];searchInput.value=movie.title;clearSuggestions();showDetails(movie)});document.addEventListener('click',event=>{if(!event.target.closest('.search-wrap'))clearSuggestions()});
-document.querySelectorAll('[data-query]').forEach(button=>button.addEventListener('click',()=>{searchInput.value=button.dataset.query;submitSearch(button.dataset.query)}));$('#heroDetails').addEventListener('click',()=>showDetails(popularMovies.find(movie=>String(movie.tmdbId)===$('#heroDetails').dataset.movieId)||popularMovies[0]));$('#surpriseButton').addEventListener('click',()=>showDetails(popularMovies[Math.floor(Math.random()*popularMovies.length)]));$('#closeModal').addEventListener('click',()=>modal.close());$('#watchlistButton').addEventListener('click',()=>{toggleWatchlist(activeMovie);modal.close()});$('#watchlistItems').addEventListener('click',event=>{const button=event.target.closest('[data-remove]');if(!button)return;const list=getWatchlist(),[removed]=list.splice(Number(button.dataset.remove),1);setWatchlist(list);renderWatchlist();toast(`${removed.title} removed from your watchlist`)});$('#clearWatchlist').addEventListener('click',()=>{setWatchlist([]);renderWatchlist();toast('Watchlist cleared')});$('#collectionRail').addEventListener('click',event=>{const card=event.target.closest('[data-collection]');if(card)openCollection(card.dataset.collection)});
+grid.addEventListener("click", (event) => {
+  const card = event.target.closest("[data-index]");
+  if (!card) return;
+  const movie = shownMovies[Number(card.dataset.index)];
+  if (event.target.closest("[data-bookmark]")) {
+    toggleWatchlist(movie);
+    return;
+  }
+  showDetails(movie);
+});
+$("#searchForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  submitSearch(searchInput.value.trim());
+  $("#discover").scrollIntoView({ behavior: "smooth" });
+});
+searchInput.addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => suggestions(searchInput.value.trim()), 260);
+});
+searchInput.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") clearSuggestions();
+});
+searchResults.addEventListener("click", (event) => {
+  const item = event.target.closest("[data-suggestion]");
+  if (!item) return;
+  const movie = searchResults._movies[Number(item.dataset.suggestion)];
+  searchInput.value = movie.title;
+  clearSuggestions();
+  showDetails(movie);
+});
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".search-wrap")) clearSuggestions();
+});
+document.querySelectorAll("[data-query]").forEach((button) =>
+  button.addEventListener("click", () => {
+    searchInput.value = button.dataset.query;
+    submitSearch(button.dataset.query);
+  }),
+);
+$("#heroDetails").addEventListener("click", () =>
+  showDetails(
+    popularMovies.find(
+      (movie) => String(movie.tmdbId) === $("#heroDetails").dataset.movieId,
+    ) || popularMovies[0],
+  ),
+);
+$("#surpriseButton").addEventListener("click", () =>
+  showDetails(popularMovies[Math.floor(Math.random() * popularMovies.length)]),
+);
+$("#closeModal").addEventListener("click", () => modal.close());
+$("#watchlistButton").addEventListener("click", () => {
+  toggleWatchlist(activeMovie);
+  modal.close();
+});
+$("#watchlistItems").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove]");
+  if (!button) return;
+  const list = getWatchlist(),
+    [removed] = list.splice(Number(button.dataset.remove), 1);
+  setWatchlist(list);
+  renderWatchlist();
+  toast(`${removed.title} removed from your watchlist`);
+});
+$("#clearWatchlist").addEventListener("click", () => {
+  setWatchlist([]);
+  renderWatchlist();
+  toast("Watchlist cleared");
+});
+$("#collectionRail").addEventListener("click", (event) => {
+  const card = event.target.closest("[data-collection]");
+  if (card) openCollection(card.dataset.collection);
+});
 initialise();

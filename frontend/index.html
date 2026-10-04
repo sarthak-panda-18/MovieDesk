@@ -3,42 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#080b16" />
+    <meta name="theme-color" content="#0d0714" />
     <title>MovieDesk | Find your next great watch</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Serif+Display:ital@0;1&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./theme.css" />
   </head>
   <body>
+    <div id="cursorAura" class="cursor-aura" aria-hidden="true"></div>
     <div class="ambient ambient-one"></div>
     <div class="ambient ambient-two"></div>
     <header class="site-header" id="top">
       <nav class="nav shell" aria-label="Primary navigation">
-        <a class="brand" href="#top" aria-label="MovieDesk home"
-          ><span class="brand-mark">M</span><span>MovieDesk</span></a
-        >
+        <a class="brand" href="#top" aria-label="MovieDesk home">
+          <span class="brand-mark">M</span>
+          <span>MovieDesk</span>
+        </a>
         <div class="nav-links">
-          <a href="#discover">Discover</a><a href="#collections">Collections</a
-          ><a href="#watchlist"
-            >My List
-            <span id="watchlistCount" class="nav-count" hidden>0</span></a
-          >
+          <a href="#discover" class="nav-link active">Discover</a>
+          <a href="#collections" class="nav-link">Collections</a>
+          <a href="#watchlist" class="nav-link">
+            My List
+            <span id="watchlistCount" class="nav-count" hidden>0</span>
+          </a>
         </div>
         <button id="surpriseButton" class="nav-action">
-          Surprise me <span aria-hidden="true">&#8599;</span>
+          <span class="surprise-icon">✦</span> Surprise me
         </button>
       </nav>
     </header>
 
     <main>
+      <!-- Hero Section -->
       <section id="hero" class="hero">
         <div id="heroBackdrop" class="hero-backdrop" aria-hidden="true"></div>
         <div class="hero-scrim"></div>
+        
         <div class="shell hero-content" id="heroContent">
           <p class="kicker"><span class="live-dot"></span> Trending now</p>
           <p id="heroMeta" class="hero-meta">
@@ -51,20 +56,62 @@
           </p>
           <div class="hero-actions">
             <button id="heroDetails" class="button button-primary">
-              <span aria-hidden="true">&#9654;</span> Explore film</button
-            ><a class="button button-quiet" href="#discover">Browse popular</a>
+              <span aria-hidden="true">&#9654;</span> Explore film
+            </button>
+            <button id="heroTrailerBtn" class="button button-quiet">
+              <span aria-hidden="true">&#9658;</span> Watch trailer
+            </button>
+            <a class="button button-quiet" href="#discover">Browse popular</a>
+          </div>
+        </div>
+
+        <!-- Full-Width Expanded Carousel Bar -->
+        <div class="hero-bottom-controls shell">
+          <div class="hero-carousel-bar">
+            <div class="hero-carousel-header">
+              <div class="hero-slide-info">
+                <span class="slide-indicator-label">FEATURED SPOTLIGHT</span>
+                <div class="hero-slide-counter">
+                  <span id="heroCurrentSlide" class="current-slide">01</span>
+                  <span class="slide-divider">/</span>
+                  <span id="heroTotalSlides" class="total-slides">05</span>
+                  <span id="heroSlideTitle" class="hero-slide-preview-title">Dune: Part Two</span>
+                </div>
+              </div>
+              <div class="hero-nav-buttons">
+                <button id="heroPrevBtn" class="hero-arrow-btn" aria-label="Previous film">&#8592;</button>
+                <button id="heroNextBtn" class="hero-arrow-btn" aria-label="Next film">&#8594;</button>
+              </div>
+            </div>
+            <div id="heroSegments" class="hero-segments-grid" role="tablist" aria-label="Featured movie carousel">
+              <!-- Dynamically populated 5 interactive segments with fill bars -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Discover Section -->
+      <section id="discover" class="section shell">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">Curated for tonight</p>
+            <h2>Popular <em>right now.</em></h2>
+            <p class="section-desc">
+              Fresh audience favorites from around the world. Tap any card for the full story.
+            </p>
           </div>
           <div class="search-wrap">
             <form id="searchForm" class="search" role="search">
-              <label class="sr-only" for="searchInput">Search movies</label
-              ><span class="search-symbol" aria-hidden="true"></span
-              ><input
+              <label class="sr-only" for="searchInput">Search movies</label>
+              <span class="search-symbol" aria-hidden="true"></span>
+              <input
                 id="searchInput"
                 autocomplete="off"
-                placeholder="Search a movie, actor, or director"
+                placeholder="Search a movie, actor, or director..."
                 aria-expanded="false"
                 aria-controls="searchResults"
-              /><button type="submit">Search</button>
+              />
+              <button type="submit" id="searchSubmitBtn">Search</button>
             </form>
             <div
               id="searchResults"
@@ -72,35 +119,47 @@
               role="listbox"
               hidden
             ></div>
-          </div>
-          <div class="quick-search">
-            <span>Popular searches</span
-            ><button data-query="Interstellar">Interstellar</button
-            ><button data-query="Dune">Dune</button
-            ><button data-query="Parasite">Parasite</button>
+            <div class="quick-search">
+              <span>Popular:</span>
+              <button data-query="Interstellar">Interstellar</button>
+              <button data-query="Dune">Dune</button>
+              <button data-query="Parasite">Parasite</button>
+              <button data-query="Avengers">Avengers</button>
+            </div>
           </div>
         </div>
-      </section>
 
-      <section id="discover" class="section shell">
-        <div class="section-heading">
-          <div>
-            <p class="kicker">Curated for tonight</p>
-            <h2>Popular <em>right now.</em></h2>
+        <div class="filter-bar">
+          <div class="genre-chips-scroll" id="genreFilterBar" role="tablist" aria-label="Movie genres">
+            <button class="filter-chip active" data-genre="all">✨ All</button>
+            <button class="filter-chip" data-genre="28">💥 Action</button>
+            <button class="filter-chip" data-genre="878">🚀 Sci-Fi</button>
+            <button class="filter-chip" data-genre="18">🎭 Drama</button>
+            <button class="filter-chip" data-genre="35">🍿 Comedy</button>
+            <button class="filter-chip" data-genre="53">⚡ Thriller</button>
+            <button class="filter-chip" data-genre="16">🎨 Animation</button>
+            <button class="filter-chip" data-genre="27">👻 Horror</button>
+            <button class="filter-chip" data-genre="10749">💖 Romance</button>
           </div>
-          <p>
-            Fresh audience favorites from around the world. Tap any card for the
-            full story.
-          </p>
+          <div class="sort-control">
+            <label for="sortSelect" class="sr-only">Sort Movies</label>
+            <select id="sortSelect" class="sort-select" aria-label="Sort movies by">
+              <option value="popularity">🔥 Most Popular</option>
+              <option value="rating">⭐ Highest Rated</option>
+              <option value="release_date">📅 Newest Releases</option>
+            </select>
+          </div>
         </div>
+
         <div id="movieGrid" class="movie-grid" aria-live="polite"></div>
         <div id="movieEmpty" class="empty-state" hidden>
           <div class="empty-orbit">&#10022;</div>
           <h3>No films found</h3>
-          <p>Try a different title, actor, or director.</p>
+          <p>Try a different keyword or explore another genre category.</p>
         </div>
       </section>
 
+      <!-- Collections Section -->
       <section id="collections" class="section collections-section">
         <div class="shell">
           <div class="section-heading">
@@ -108,9 +167,10 @@
               <p class="kicker">Explore in chapters</p>
               <h2>Great <em>collections.</em></h2>
             </div>
-            <p>
-              Complete TMDB collection data, including every film in the set.
-            </p>
+            <div class="collection-controls">
+              <button id="collectionPrev" class="rail-arrow" aria-label="Previous collections">&#8592;</button>
+              <button id="collectionNext" class="rail-arrow" aria-label="Next collections">&#8594;</button>
+            </div>
           </div>
         </div>
         <div
@@ -121,6 +181,7 @@
         ></div>
       </section>
 
+      <!-- Watchlist Section -->
       <section id="watchlist" class="section shell watchlist-section">
         <div class="section-heading">
           <div>
@@ -145,48 +206,153 @@
       </section>
     </main>
 
+    <!-- Unified Cinema Detail Modal -->
     <dialog id="movieModal" class="movie-modal" aria-labelledby="modalTitle">
-      <button id="closeModal" class="modal-close" aria-label="Close details">
-        &#215;
-      </button>
-      <div id="modalBackdrop" class="modal-backdrop"></div>
-      <div class="modal-body">
-        <p id="modalMeta" class="kicker"></p>
-        <h2 id="modalTitle"></h2>
-        <p id="modalTagline" class="modal-tagline"></p>
-        <p id="modalOverview" class="modal-overview"></p>
-        <div class="detail-grid">
-          <div><span>Director</span><strong id="modalDirector"></strong></div>
-          <div><span>Lead cast</span><strong id="modalCast"></strong></div>
-          <div>
-            <span>Release date</span><strong id="modalReleaseDate"></strong>
-          </div>
-          <div><span>Rating</span><strong id="modalRating"></strong></div>
-        </div>
-        <div class="financials">
-          <div class="financial-heading">
-            <span>Movie financials</span><small id="exchangeRate"></small>
-          </div>
-          <div class="currency-grid">
-            <div>
-              <p>USD / Original</p>
-              <span>Budget</span><strong id="modalBudgetUsd"></strong
-              ><span>Worldwide revenue</span
-              ><strong id="modalRevenueUsd"></strong>
+      <button id="closeModal" class="modal-close" aria-label="Close details">&#215;</button>
+      
+      <!-- Full-bleed background layers -->
+      <div id="modalBackdrop" class="modal-backdrop-layer"></div>
+      <div class="modal-scrim-layer"></div>
+      
+      <!-- Modal Inner Container -->
+      <div class="modal-scroll-wrap">
+        <!-- Trailer Theater Mode -->
+        <div id="modalTrailerSection" class="modal-trailer-section" hidden>
+          <div class="trailer-header">
+            <div class="trailer-header-left">
+              <span class="live-dot"></span>
+              <span id="trailerTitle" class="trailer-title-text">Official HD Trailer</span>
             </div>
-            <div class="inr-card">
-              <p>INR / Estimate</p>
-              <span>Budget</span><strong id="modalBudgetInr"></strong
-              ><span>Worldwide revenue</span
-              ><strong id="modalRevenueInr"></strong>
+            <div class="trailer-header-actions">
+              <a id="trailerExternalLink" class="trailer-external-link" href="#" target="_blank" rel="noopener noreferrer">
+                <span>YouTube</span> ↗
+              </a>
+              <button id="closeTrailerBtn" class="close-trailer-btn" aria-label="Close trailer">&#215; Close Player</button>
             </div>
           </div>
+          <div class="trailer-wrap">
+            <iframe
+              id="modalTrailerIframe"
+              src=""
+              title="Official Movie Trailer"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+              loading="lazy"
+            ></iframe>
+          </div>
         </div>
-        <button id="watchlistButton" class="button button-primary">
-          Bookmark to watchlist
-        </button>
+
+        <!-- Unified Cinema Body -->
+        <div class="modal-content-grid" id="modalBody">
+          <!-- Left Poster & Quick Actions Column -->
+          <div class="modal-poster-col">
+            <div class="modal-poster-card" id="modalPosterCard">
+              <img id="modalPosterImg" src="" alt="Movie Poster" />
+              <div class="modal-poster-glare"></div>
+              <div class="modal-poster-badge" id="modalRatingBadge">
+                <span class="star-icon">★</span>
+                <strong id="modalRatingScore">0.0</strong>
+              </div>
+            </div>
+            
+            <div class="modal-action-stack">
+              <button id="modalWatchTrailerBtn" class="button button-primary modal-btn-trailer">
+                <span aria-hidden="true">&#9658;</span> Watch Official Trailer
+              </button>
+              <button id="watchlistButton" class="button button-quiet modal-btn-watchlist">
+                Bookmark to watchlist
+              </button>
+              <button id="modalShareBtn" class="button button-quiet modal-btn-share" aria-label="Share movie">
+                <span aria-hidden="true">&#8599;</span> Share Movie
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Details Column -->
+          <div class="modal-details-col">
+            <div class="modal-header-meta">
+              <span id="modalYear" class="meta-tag-pill">2026</span>
+              <span class="meta-dot">•</span>
+              <span id="modalMeta" class="modal-genre-tags">Sci-Fi / Adventure</span>
+              <span class="meta-dot">•</span>
+              <span id="modalVoteCount" class="meta-tag-muted">2,400+ votes</span>
+            </div>
+
+            <h2 id="modalTitle" class="modal-main-title">Movie Title</h2>
+            <p id="modalTagline" class="modal-tagline"></p>
+            
+            <div class="modal-synopsis-wrap">
+              <h3 class="modal-subheading">Story Overview</h3>
+              <p id="modalOverview" class="modal-overview"></p>
+            </div>
+
+            <div class="modal-credits-grid">
+              <div class="credit-card">
+                <span class="credit-label">Director</span>
+                <strong id="modalDirector" class="credit-val">Denis Villeneuve</strong>
+              </div>
+              <div class="credit-card">
+                <span class="credit-label">Lead Cast</span>
+                <strong id="modalCast" class="credit-val">Timothée Chalamet, Zendaya</strong>
+              </div>
+              <div class="credit-card">
+                <span class="credit-label">Release Date</span>
+                <strong id="modalReleaseDate" class="credit-val">Feb 27, 2024</strong>
+              </div>
+              <div class="credit-card">
+                <span class="credit-label">TMDB Score</span>
+                <strong id="modalRating" class="credit-val">8.1 / 10</strong>
+              </div>
+            </div>
+
+            <!-- Financials Section -->
+            <div class="financials">
+              <div class="financial-heading">
+                <span>Box Office & Production Financials</span>
+                <small id="exchangeRate">1 USD = INR 83.75</small>
+              </div>
+              <div class="currency-grid">
+                <div class="currency-card">
+                  <p class="currency-label">USD / Global Standard</p>
+                  <div class="fin-stat">
+                    <span>Production Budget</span>
+                    <strong id="modalBudgetUsd">$190M</strong>
+                  </div>
+                  <div class="fin-stat">
+                    <span>Worldwide Box Office</span>
+                    <strong id="modalRevenueUsd">$714M</strong>
+                  </div>
+                </div>
+                <div class="currency-card inr-card">
+                  <p class="currency-label">INR / Indian Rupee Estimate</p>
+                  <div class="fin-stat">
+                    <span>Production Budget</span>
+                    <strong id="modalBudgetInr">₹1.59KCr</strong>
+                  </div>
+                  <div class="fin-stat">
+                    <span>Worldwide Box Office</span>
+                    <strong id="modalRevenueInr">₹5.98KCr</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </dialog>
+
+    <!-- Surprise Me Reel Modal -->
+    <dialog id="surpriseModal" class="surprise-modal" aria-labelledby="surpriseHeading">
+      <div class="surprise-container">
+        <div class="surprise-sparkle" aria-hidden="true">✦</div>
+        <h2 id="surpriseHeading">Selecting Your Next Watch...</h2>
+        <div class="surprise-reel-frame">
+          <div id="surpriseReel" class="surprise-reel"></div>
+        </div>
+        <div class="surprise-status" id="surpriseStatus">Spinning the catalog...</div>
+      </div>
+    </dialog>
+
     <div id="toast" class="toast" role="status"></div>
     <script src="config.js"></script>
     <script>
@@ -195,3 +361,5 @@
     <script src="app.js"></script>
   </body>
 </html>
+
+

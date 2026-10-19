@@ -101,8 +101,15 @@ app.get("/api/*", async (req, res) => {
 });
 
 app.use(express.static(path.join(__dirname, "frontend")));
+app.use("/frontend", express.static(path.join(__dirname, "frontend")));
 
 app.get("*", (req, res) => {
+    if (req.path.endsWith(".css") || req.path.endsWith(".js") || req.path.endsWith(".json")) {
+        const filePath = path.join(__dirname, "frontend", path.basename(req.path));
+        return res.sendFile(filePath, (err) => {
+            if (err) res.status(404).end();
+        });
+    }
     res.sendFile(path.join(__dirname, "frontend", "index.html"));
 });
 

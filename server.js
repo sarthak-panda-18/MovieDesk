@@ -100,15 +100,27 @@ app.get("/api/*", async (req, res) => {
     }
 });
 
-app.use(express.static(path.join(__dirname, "frontend")));
-app.use("/frontend", express.static(path.join(__dirname, "frontend")));
+const staticDirs = [path.join(__dirname, "public"), path.join(__dirname, "frontend")];
+staticDirs.forEach((dir) => {
+    app.use(express.static(dir));
+    app.use("/public", express.static(dir));
+    app.use("/frontend", express.static(dir));
+});
 
 app.get("*", (req, res) => {
     if (req.path.endsWith(".css") || req.path.endsWith(".js") || req.path.endsWith(".json")) {
-        const filePath = path.join(__dirname, "frontend", path.basename(req.path));
-        return res.sendFile(filePath, (err) => {
-            if (err) res.status(404).end();
-        });
+        const file = path.basename(req.path);
+        for (const dir of staticDirs) {
+            const filePath = path.join(dir, file);
+            if (require("fs").existsSync(filePath)) {
+                return res.sendFile(filePath);
+            }
+        }
+        return res.status(404).end();
+    }
+    const htmlPath = path.join(__dirname, "public", "index.html");
+    if (require("fs").existsSync(htmlPath)) {
+        return res.sendFile(htmlPath);
     }
     res.sendFile(path.join(__dirname, "frontend", "index.html"));
 });

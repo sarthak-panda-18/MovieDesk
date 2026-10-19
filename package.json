@@ -2,7 +2,7 @@
   "name": "soo-hey-we-are-working-on",
   "version": "1.0.0",
   "description": "MovieDesk is a modern movie discovery web application built using HTML, CSS, and JavaScript. It integrates with The Movie Database (TMDB) API to provide real-time movie information, including trending titles, ratings, genres, and search functionality.",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js"

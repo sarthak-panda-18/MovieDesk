@@ -132,6 +132,168 @@ let searchTimer = null;
 let heroTimer = null;
 let currentGenre = "all";
 let currentSort = "popularity";
+let currentVibe = "all";
+
+/* ========================================================
+   Cinema Soundscape Audio Engine (Web Audio API)
+   ======================================================== */
+const AudioEngine = (() => {
+  let ctx = null;
+  let enabled = localStorage.getItem("moviedesk_sound") !== "false";
+
+  function getCtx() {
+    if (!ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) ctx = new AudioCtx();
+    }
+    if (ctx && ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+    return ctx;
+  }
+
+  function isEnabled() {
+    return enabled;
+  }
+
+  function setEnabled(val) {
+    enabled = val;
+    localStorage.setItem("moviedesk_sound", String(enabled));
+    updateToggleUI();
+  }
+
+  function toggle() {
+    setEnabled(!enabled);
+    if (enabled) playClick();
+  }
+
+  function updateToggleUI() {
+    const btn = $("#soundToggle");
+    if (!btn) return;
+    const icon = btn.querySelector(".sound-icon");
+    const text = btn.querySelector(".sound-text");
+    if (enabled) {
+      btn.classList.remove("is-muted");
+      if (icon) icon.textContent = "🔊";
+      if (text) text.textContent = "Sound ON";
+    } else {
+      btn.classList.add("is-muted");
+      if (icon) icon.textContent = "🔇";
+      if (text) text.textContent = "Sound OFF";
+    }
+  }
+
+  function playClick() {
+    if (!enabled) return;
+    try {
+      const c = getCtx();
+      if (!c) return;
+      const osc = c.createOscillator();
+      const gain = c.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(620, c.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(200, c.currentTime + 0.04);
+      gain.gain.setValueAtTime(0.04, c.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.04);
+      osc.connect(gain);
+      gain.connect(c.destination);
+      osc.start();
+      osc.stop(c.currentTime + 0.045);
+    } catch (_) {}
+  }
+
+  function playWhoosh() {
+    if (!enabled) return;
+    try {
+      const c = getCtx();
+      if (!c) return;
+      const osc = c.createOscillator();
+      const gain = c.createGain();
+      const filter = c.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(220, c.currentTime);
+      filter.frequency.exponentialRampToValueAtTime(1300, c.currentTime + 0.12);
+      filter.frequency.exponentialRampToValueAtTime(140, c.currentTime + 0.28);
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(95, c.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(45, c.currentTime + 0.28);
+      gain.gain.setValueAtTime(0.001, c.currentTime);
+      gain.gain.linearRampToValueAtTime(0.07, c.currentTime + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.28);
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(c.destination);
+      osc.start();
+      osc.stop(c.currentTime + 0.3);
+    } catch (_) {}
+  }
+
+  function playChime() {
+    if (!enabled) return;
+    try {
+      const c = getCtx();
+      if (!c) return;
+      [523.25, 659.25, 783.99].forEach((freq, idx) => {
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, c.currentTime + idx * 0.06);
+        gain.gain.setValueAtTime(0.001, c.currentTime + idx * 0.06);
+        gain.gain.linearRampToValueAtTime(0.05, c.currentTime + idx * 0.06 + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + idx * 0.06 + 0.35);
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.start(c.currentTime + idx * 0.06);
+        osc.stop(c.currentTime + idx * 0.06 + 0.36);
+      });
+    } catch (_) {}
+  }
+
+  return { playClick, playWhoosh, playChime, isEnabled, setEnabled, toggle, updateToggleUI };
+})();
+
+/* Micro Confetti Burst Effect */
+function burstConfetti(x, y) {
+  const container = document.createElement("div");
+  container.className = "confetti-burst-container";
+  container.style.left = `${x}px`;
+  container.style.top = `${y}px`;
+  document.body.appendChild(container);
+
+  const colors = ["#ffad8a", "#ff5c9d", "#d9ff4e", "#ae8cff", "#4ecdc4", "#ffffff"];
+  const count = 22;
+
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement("span");
+    p.className = "burst-particle";
+    const angle = (i / count) * 2 * Math.PI + (Math.random() - 0.5) * 0.4;
+    const distance = 40 + Math.random() * 55;
+    const destX = Math.cos(angle) * distance;
+    const destY = Math.sin(angle) * distance;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const size = 4 + Math.random() * 5;
+
+    p.style.setProperty("--tx", `${destX}px`);
+    p.style.setProperty("--ty", `${destY}px`);
+    p.style.backgroundColor = color;
+    p.style.width = `${size}px`;
+    p.style.height = `${size}px`;
+    if (i % 3 === 0) p.style.borderRadius = "50%";
+    container.appendChild(p);
+  }
+
+  setTimeout(() => container.remove(), 900);
+}
+
+const vibeMap = {
+  all: null,
+  mindbending: [878, 9648, 53],
+  adrenaline: [28, 12, 80],
+  deep: [18, 10749],
+  cozy: [35, 10751, 16],
+  chills: [27, 53],
+  spectacle: [14, 878, 12],
+};
 
 const $ = (selector) => document.querySelector(selector);
 const grid = $("#movieGrid");
@@ -437,6 +599,17 @@ function filterAndSortMovies() {
     );
   }
 
+  if (currentVibe !== "all" && vibeMap[currentVibe]) {
+    const requiredGenres = vibeMap[currentVibe];
+    list = list.filter((m) =>
+      (m.genreIds || []).some((id) => requiredGenres.includes(id)) ||
+      (m.genres || []).some((g) => {
+        const foundId = Object.keys(genreMap).find(k => genreMap[k].toLowerCase() === g.toLowerCase());
+        return foundId && requiredGenres.includes(Number(foundId));
+      })
+    );
+  }
+
   if (currentSort === "rating") {
     list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
   } else if (currentSort === "release_date") {
@@ -596,22 +769,35 @@ function renderWatchlist() {
   }
   const clearBtn = $("#clearWatchlist");
   const countBadge = $("#watchlistCount");
+  const dockBadge = $("#dockWatchlistCount");
   if (clearBtn) clearBtn.hidden = !list.length;
   if (countBadge) {
     countBadge.hidden = !list.length;
     countBadge.textContent = list.length;
   }
+  if (dockBadge) {
+    dockBadge.hidden = !list.length;
+    dockBadge.textContent = list.length;
+  }
 }
 
-function toggleWatchlist(movie, triggerElement) {
+function toggleWatchlist(movie, triggerElement, clickCoords = null) {
   const list = getWatchlist();
   const index = list.findIndex((item) => movieKey(item) === movieKey(movie));
   if (index >= 0) {
     list.splice(index, 1);
     toast(`${movie.title} removed from your watchlist`);
+    AudioEngine.playClick();
   } else {
     list.unshift(movie);
     toast(`★ ${movie.title} saved to your watchlist`);
+    AudioEngine.playChime();
+    if (clickCoords) {
+      burstConfetti(clickCoords.x, clickCoords.y);
+    } else if (triggerElement) {
+      const rect = triggerElement.getBoundingClientRect();
+      burstConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    }
     if (triggerElement) {
       triggerElement.classList.add("bookmark-pop");
       setTimeout(() => triggerElement.classList.remove("bookmark-pop"), 500);
@@ -668,6 +854,10 @@ function stopTrailerPlayback() {
 /* Movie Detail Modal */
 function showMovie(movie, autoPlayTrailer = false) {
   activeMovie = movie;
+  modal?.classList.remove("modal-closing");
+  const scrollWrap = $(".modal-scroll-wrap");
+  if (scrollWrap) scrollWrap.scrollTop = 0;
+
   const backdropEl = $("#modalBackdrop");
   if (backdropEl) {
     backdropEl.style.backgroundImage = movie.backdrop ? `url("${movie.backdrop}")` : "";
@@ -755,12 +945,38 @@ function showMovie(movie, autoPlayTrailer = false) {
     });
   }
 
-  if (autoPlayTrailer) {
-    startTrailerPlayback(movie);
-  } else {
-    stopTrailerPlayback();
+  // Recommendations Shelf
+  const recSection = $("#modalRecommendations");
+  const recRail = $("#modalRecRail");
+  if (recSection && recRail) {
+    recSection.hidden = true;
+    recRail.innerHTML = "";
+    if (movie.tmdbId) {
+      tmdb(`/movie/${movie.tmdbId}/recommendations`, { language: "en-US" })
+        .then((data) => {
+          const recs = (data.results || []).filter((r) => r.poster_path).slice(0, 7);
+          if (recs.length > 0 && activeMovie && (activeMovie.tmdbId === movie.tmdbId || activeMovie.id === movie.tmdbId)) {
+            recRail.innerHTML = recs
+              .map(
+                (r) => `
+                <article class="modal-rec-card" data-rec-id="${r.id}" title="${clean(r.title)}">
+                  <img src="${image(r.poster_path, "w342")}" alt="${clean(r.title)}" loading="lazy" />
+                  <div class="modal-rec-info">
+                    <strong>${clean(r.title)}</strong>
+                    <span>★ ${(r.vote_average || 0).toFixed(1)}</span>
+                  </div>
+                </article>
+              `,
+              )
+              .join("");
+            recSection.hidden = false;
+          }
+        })
+        .catch(() => {});
+    }
   }
 
+  AudioEngine.playWhoosh();
   modal.showModal();
 }
 
@@ -995,7 +1211,7 @@ grid?.addEventListener("click", (event) => {
   if (bookmarkBtn) {
     event.stopPropagation();
     const movie = shownMovies[Number(bookmarkBtn.dataset.bookmark)];
-    toggleWatchlist(movie, bookmarkBtn);
+    toggleWatchlist(movie, bookmarkBtn, { x: event.clientX, y: event.clientY });
     return;
   }
 
@@ -1008,6 +1224,7 @@ grid?.addEventListener("click", (event) => {
 // Search Form
 $("#searchForm")?.addEventListener("submit", (event) => {
   event.preventDefault();
+  AudioEngine.playClick();
   submitSearch(searchInput.value.trim());
   $("#discover")?.scrollIntoView({ behavior: "smooth" });
 });
@@ -1027,6 +1244,7 @@ searchResults?.addEventListener("click", (event) => {
   const movie = searchResults._movies[Number(item.dataset.suggestion)];
   searchInput.value = movie.title;
   clearSuggestions();
+  AudioEngine.playClick();
   showDetails(movie);
 });
 
@@ -1037,76 +1255,179 @@ document.addEventListener("click", (event) => {
 // Quick Search Tags
 document.querySelectorAll("[data-query]").forEach((button) =>
   button.addEventListener("click", () => {
+    AudioEngine.playClick();
     searchInput.value = button.dataset.query;
     submitSearch(button.dataset.query);
   }),
 );
 
-// Genre Filter Bar
-$("#genreFilterBar")?.addEventListener("click", (event) => {
+// Filter Mode Switcher (Vibes vs Genres)
+const modeVibesBtn = $("#modeVibesBtn");
+const modeGenresBtn = $("#modeGenresBtn");
+const vibeRail = $("#vibeFilterBar");
+const genreRail = $("#genreFilterBar");
+
+function setFilterMode(mode) {
+  if (mode === "vibes") {
+    modeVibesBtn?.classList.add("active");
+    modeVibesBtn?.setAttribute("aria-selected", "true");
+    modeGenresBtn?.classList.remove("active");
+    modeGenresBtn?.setAttribute("aria-selected", "false");
+    if (vibeRail) {
+      vibeRail.hidden = false;
+      vibeRail.style.display = "flex";
+    }
+    if (genreRail) {
+      genreRail.hidden = true;
+      genreRail.style.display = "none";
+    }
+  } else {
+    modeGenresBtn?.classList.add("active");
+    modeGenresBtn?.setAttribute("aria-selected", "true");
+    modeVibesBtn?.classList.remove("active");
+    modeVibesBtn?.setAttribute("aria-selected", "false");
+    if (genreRail) {
+      genreRail.hidden = false;
+      genreRail.style.display = "flex";
+    }
+    if (vibeRail) {
+      vibeRail.hidden = true;
+      vibeRail.style.display = "none";
+    }
+  }
+}
+
+// Initial state: vibes mode active, genres hidden
+setFilterMode("vibes");
+
+modeVibesBtn?.addEventListener("click", () => {
+  AudioEngine.playClick();
+  setFilterMode("vibes");
+});
+
+modeGenresBtn?.addEventListener("click", () => {
+  AudioEngine.playClick();
+  setFilterMode("genres");
+});
+
+// Vibe & Mood Filter Bar
+vibeRail?.addEventListener("click", (event) => {
   const chip = event.target.closest(".filter-chip");
   if (!chip) return;
-  document.querySelectorAll(".filter-chip").forEach((c) => c.classList.remove("active"));
+  document.querySelectorAll("#vibeFilterBar .filter-chip").forEach((p) => p.classList.remove("active"));
+  chip.classList.add("active");
+  currentVibe = chip.dataset.vibe;
+
+  const glowColor = chip.dataset.glow || "#ffad8a";
+  document.documentElement.style.setProperty("--lime", glowColor);
+  document.documentElement.style.setProperty("--lime-glow", `${glowColor}66`);
+
+  AudioEngine.playClick();
+  filterAndSortMovies();
+});
+
+// Genre Filter Bar
+genreRail?.addEventListener("click", (event) => {
+  const chip = event.target.closest(".filter-chip");
+  if (!chip) return;
+  document.querySelectorAll("#genreFilterBar .filter-chip").forEach((c) => c.classList.remove("active"));
   chip.classList.add("active");
   currentGenre = chip.dataset.genre;
+  AudioEngine.playClick();
   filterAndSortMovies();
 });
 
 // Sort Control
 $("#sortSelect")?.addEventListener("change", (e) => {
   currentSort = e.target.value;
+  AudioEngine.playClick();
   filterAndSortMovies();
 });
 
 // Hero Arrow Controls
 $("#heroPrevBtn")?.addEventListener("click", () => {
+  AudioEngine.playWhoosh();
   featuredIndex = (featuredIndex - 1 + Math.min(popularMovies.length, 5)) % Math.min(popularMovies.length, 5);
   updateHero(popularMovies[featuredIndex], featuredIndex);
   startHeroCycle();
 });
 
 $("#heroNextBtn")?.addEventListener("click", () => {
+  AudioEngine.playWhoosh();
   featuredIndex = (featuredIndex + 1) % Math.min(popularMovies.length, 5);
   updateHero(popularMovies[featuredIndex], featuredIndex);
   startHeroCycle();
 });
 
-$("#heroDetails")?.addEventListener("click", () =>
+$("#heroDetails")?.addEventListener("click", () => {
+  AudioEngine.playWhoosh();
   showDetails(
     popularMovies.find(
       (movie) => String(movie.tmdbId) === $("#heroDetails").dataset.movieId,
     ) || popularMovies[0],
     false,
-  ),
-);
+  );
+});
 
 $("#heroTrailerBtn")?.addEventListener("click", () => {
+  AudioEngine.playWhoosh();
   const movie = popularMovies[featuredIndex] || fallbackMovies[0];
   showDetails(movie, true);
 });
 
 // Surprise Me
-$("#surpriseButton")?.addEventListener("click", triggerSurpriseMe);
+$("#surpriseButton")?.addEventListener("click", () => {
+  AudioEngine.playClick();
+  triggerSurpriseMe();
+});
+
+// Audio Experience Toggle
+$("#soundToggle")?.addEventListener("click", () => {
+  AudioEngine.toggle();
+});
+
+// Silky Smooth Modal Close
+function closeModalWithAnimation() {
+  if (!modal || !modal.open) return;
+  modal.classList.add("modal-closing");
+  AudioEngine.playClick();
+  setTimeout(() => {
+    modal.close();
+    modal.classList.remove("modal-closing");
+    stopTrailerPlayback();
+  }, 210);
+}
 
 // Modal Close & Watchlist & Backdrop click
-$("#closeModal")?.addEventListener("click", () => {
-  modal.close();
-  stopTrailerPlayback();
-});
+$("#closeModal")?.addEventListener("click", closeModalWithAnimation);
 
 modal?.addEventListener("click", (event) => {
   if (event.target === modal) {
-    modal.close();
-    stopTrailerPlayback();
+    closeModalWithAnimation();
   }
 });
 
-$("#watchlistButton")?.addEventListener("click", () => {
-  if (activeMovie) {
-    toggleWatchlist(activeMovie);
-    modal.close();
-    stopTrailerPlayback();
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && modal?.open) {
+    e.preventDefault();
+    closeModalWithAnimation();
   }
+});
+
+$("#watchlistButton")?.addEventListener("click", (event) => {
+  if (activeMovie) {
+    toggleWatchlist(activeMovie, $("#watchlistButton"), { x: event.clientX, y: event.clientY });
+    closeModalWithAnimation();
+  }
+});
+
+// Recommendations Shelf in Cinema Modal
+$("#modalRecRail")?.addEventListener("click", (event) => {
+  const card = event.target.closest("[data-rec-id]");
+  if (!card) return;
+  const id = Number(card.dataset.recId);
+  AudioEngine.playWhoosh();
+  showDetails({ tmdbId: id }, false);
 });
 
 $("#watchlistItems")?.addEventListener("click", (event) => {
@@ -1127,16 +1448,42 @@ $("#clearWatchlist")?.addEventListener("click", () => {
 
 // Collection Rail Scroll Arrows
 $("#collectionPrev")?.addEventListener("click", () => {
+  AudioEngine.playClick();
   $("#collectionRail")?.scrollBy({ left: -320, behavior: "smooth" });
 });
 
 $("#collectionNext")?.addEventListener("click", () => {
+  AudioEngine.playClick();
   $("#collectionRail")?.scrollBy({ left: 320, behavior: "smooth" });
 });
 
 $("#collectionRail")?.addEventListener("click", (event) => {
   const card = event.target.closest("[data-collection]");
-  if (card) openCollection(card.dataset.collection);
+  if (card) {
+    AudioEngine.playWhoosh();
+    openCollection(card.dataset.collection);
+  }
 });
 
+// Floating Cinema Remote Dock
+const floatingDock = $("#floatingDock");
+window.addEventListener("scroll", () => {
+  if (floatingDock) {
+    floatingDock.hidden = window.scrollY < 420;
+  }
+});
+
+$("#dockSurpriseBtn")?.addEventListener("click", () => {
+  AudioEngine.playClick();
+  triggerSurpriseMe();
+});
+
+$("#dockTopBtn")?.addEventListener("click", () => {
+  AudioEngine.playWhoosh();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+// Initialize UI
+AudioEngine.updateToggleUI();
 initialise();
+

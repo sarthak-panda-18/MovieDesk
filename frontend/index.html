@@ -32,9 +32,15 @@
             <span id="watchlistCount" class="nav-count" hidden>0</span>
           </a>
         </div>
-        <button id="surpriseButton" class="nav-action">
-          <span class="surprise-icon">✦</span> Surprise me
-        </button>
+        <div class="nav-actions-group">
+          <button id="soundToggle" class="sound-toggle-btn" aria-label="Toggle Cinema Audio" title="Toggle Cinema Audio Experience">
+            <span class="sound-icon">🔊</span>
+            <span class="sound-text">Sound ON</span>
+          </button>
+          <button id="surpriseButton" class="nav-action">
+            <span class="surprise-icon">✦</span> Surprise me
+          </button>
+        </div>
       </nav>
     </header>
 
@@ -129,25 +135,57 @@
           </div>
         </div>
 
-        <div class="filter-bar">
-          <div class="genre-chips-scroll" id="genreFilterBar" role="tablist" aria-label="Movie genres">
-            <button class="filter-chip active" data-genre="all">✨ All</button>
-            <button class="filter-chip" data-genre="28">💥 Action</button>
-            <button class="filter-chip" data-genre="878">🚀 Sci-Fi</button>
-            <button class="filter-chip" data-genre="18">🎭 Drama</button>
-            <button class="filter-chip" data-genre="35">🍿 Comedy</button>
-            <button class="filter-chip" data-genre="53">⚡ Thriller</button>
-            <button class="filter-chip" data-genre="16">🎨 Animation</button>
-            <button class="filter-chip" data-genre="27">👻 Horror</button>
-            <button class="filter-chip" data-genre="10749">💖 Romance</button>
+        <!-- Neat Unified Filter & Discovery Hub -->
+        <div class="unified-filter-hub">
+          <div class="hub-left">
+            <!-- Mode Switcher Tabs -->
+            <div class="filter-mode-switch" role="tablist" aria-label="Filter Mode">
+              <button class="mode-tab active" id="modeVibesBtn" data-mode="vibes" role="tab" aria-selected="true">
+                <span class="mode-icon">✦</span> Mood Vibes
+              </button>
+              <button class="mode-tab" id="modeGenresBtn" data-mode="genres" role="tab" aria-selected="false">
+                <span class="mode-icon">🎬</span> Genres
+              </button>
+            </div>
+
+            <!-- Active Chips Rail Viewport -->
+            <div class="chips-rail-viewport">
+              <!-- Vibes Rail -->
+              <div class="chips-rail" id="vibeFilterBar" role="tablist" aria-label="Mood Vibes">
+                <button class="filter-chip active" data-vibe="all"><span>✨</span> All Vibes</button>
+                <button class="filter-chip" data-vibe="mindbending" data-glow="#ae8cff"><span>🤯</span> Mind-Bending</button>
+                <button class="filter-chip" data-vibe="adrenaline" data-glow="#ff5964"><span>⚡</span> Adrenaline</button>
+                <button class="filter-chip" data-vibe="deep" data-glow="#4ecdc4"><span>😭</span> Deep & Soulful</button>
+                <button class="filter-chip" data-vibe="cozy" data-glow="#ffd166"><span>🍿</span> Cozy & Fun</button>
+                <button class="filter-chip" data-vibe="chills" data-glow="#ff3860"><span>🕯️</span> Dark Chills</button>
+                <button class="filter-chip" data-vibe="spectacle" data-glow="#06d6a0"><span>🌌</span> Visual Odyssey</button>
+              </div>
+
+              <!-- Genres Rail (Hidden by default, shown when Genres tab is clicked) -->
+              <div class="chips-rail" id="genreFilterBar" role="tablist" aria-label="Movie Genres" hidden>
+                <button class="filter-chip active" data-genre="all">✨ All Genres</button>
+                <button class="filter-chip" data-genre="28">💥 Action</button>
+                <button class="filter-chip" data-genre="878">🚀 Sci-Fi</button>
+                <button class="filter-chip" data-genre="18">🎭 Drama</button>
+                <button class="filter-chip" data-genre="35">🍿 Comedy</button>
+                <button class="filter-chip" data-genre="53">⚡ Thriller</button>
+                <button class="filter-chip" data-genre="16">🎨 Animation</button>
+                <button class="filter-chip" data-genre="27">👻 Horror</button>
+                <button class="filter-chip" data-genre="10749">💖 Romance</button>
+              </div>
+            </div>
           </div>
-          <div class="sort-control">
-            <label for="sortSelect" class="sr-only">Sort Movies</label>
-            <select id="sortSelect" class="sort-select" aria-label="Sort movies by">
-              <option value="popularity">🔥 Most Popular</option>
-              <option value="rating">⭐ Highest Rated</option>
-              <option value="release_date">📅 Newest Releases</option>
-            </select>
+
+          <!-- Right: Sort Control -->
+          <div class="hub-right">
+            <div class="sort-control">
+              <label for="sortSelect" class="sr-only">Sort Movies</label>
+              <select id="sortSelect" class="sort-select" aria-label="Sort movies by">
+                <option value="popularity">🔥 Most Popular</option>
+                <option value="rating">⭐ Highest Rated</option>
+                <option value="release_date">📅 Newest Releases</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -336,6 +374,15 @@
                 </div>
               </div>
             </div>
+
+            <!-- More Like This / Similar Recommendations Shelf -->
+            <div class="modal-recommendations-section" id="modalRecommendations" hidden>
+              <div class="modal-recommendations-header">
+                <span class="rec-icon">✦</span>
+                <span class="credit-label">YOU MIGHT ALSO ENJOY</span>
+              </div>
+              <div class="modal-rec-rail" id="modalRecRail"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -354,6 +401,23 @@
     </dialog>
 
     <div id="toast" class="toast" role="status"></div>
+
+    <!-- Floating Cinema Remote Dock -->
+    <aside class="floating-dock" id="floatingDock" aria-label="Quick Navigation Remote" hidden>
+      <button id="dockSurpriseBtn" class="dock-btn" title="Surprise Me (Spin Reel)" aria-label="Surprise Me">
+        <span class="dock-icon">✦</span>
+        <span class="dock-tooltip">Surprise Me</span>
+      </button>
+      <a href="#watchlist" class="dock-btn" title="View Watchlist" aria-label="Watchlist">
+        <span class="dock-icon">🔖</span>
+        <span id="dockWatchlistCount" class="dock-badge" hidden>0</span>
+        <span class="dock-tooltip">Watchlist</span>
+      </a>
+      <button id="dockTopBtn" class="dock-btn" title="Scroll to Top" aria-label="Back to Top">
+        <span class="dock-icon">↑</span>
+        <span class="dock-tooltip">Back to Top</span>
+      </button>
+    </aside>
     <script src="config.js"></script>
     <script>
       window.MOVIEDESK_CONFIG = window.MOVIEDESK_CONFIG || {};
